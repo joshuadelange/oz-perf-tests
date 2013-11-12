@@ -1,1 +1,70 @@
-console.log('\'Allo \'Allo!');
+
+'use strict' ;
+
+var L = L,
+    topojson = topojson,
+    i = 0 ;
+
+L.TopoJSON = L.GeoJSON.extend({
+    addData: function(jsonData) {
+
+        if (jsonData.type === 'Topology') {
+
+            for(var key in jsonData.objects) {
+    
+                var geojson = topojson.feature(jsonData, jsonData.objects[key]);
+                L.GeoJSON.prototype.addData.call(this, geojson);
+
+            }
+        }
+        else {
+            L.GeoJSON.prototype.addData.call(this, jsonData);
+        }
+    }
+});
+
+// var map = L.map('map').setView([51.923943445544715, 5.1416015625], 7);
+var map = L.map('map').setView([52.3731, 4.8922], 3);
+
+L.tileLayer('http://{s}.tile.cloudmade.com/8E10386EF81C4270B374C76464C939C2/113231/256/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+    zoomAnimation: false
+}).addTo(map);
+
+function jsonp(data){
+
+    console.log('jsonp') ;
+
+    $('.status').html('<p>Adding oz layer</p>') ;
+
+    var topojsonlayer = new L.TopoJSON(data, {
+        // style: {
+        //     color: 'green',
+        //     weight: 0.5,
+        //     opacity: 1,
+        //     fillOpacity: 0.3
+        // },
+        onEachFeature: function(data, layer){
+            i++ ;
+            $('.status').html('<p>Adding oz object ' + i + ' / ±10179</p>') ;
+            // console.log(data, layer) ;
+        }
+    }) ;
+
+    topojsonlayer.addTo(map) ;
+
+}
+
+
+//data for 1 oz
+// var ozData = [[-4.46364985318165,12.0570500716465,0],[-4.64565014900283,12.0681499538018,0],[-5.07864987441407,11.9838502046757,0],[-5.2587499027859,11.8399501363164,0],[-5.40864979806842,11.8299501250039,0],[-5.26724984495247,11.7636498566471,0],[-5.29674985584157,11.6268499357147,0],[-5.22234984362165,11.5880500357135,0],[-5.20455001234286,11.4252498155717,0],[-5.34604979020408,11.1348501885253,0],[-5.49185012601284,11.0482499736465,0],[-5.39385010508165,11.0402500545286,0],[-5.19774978881307,10.81584987262,0],[-4.8091500416839,10.8853499287594,0],[-4.67205019685447,10.7718500926412,0],[-4.47394978839118,10.8680501205292,0],[-4.27135007181177,10.6966501334756,0],[-4.09455010562905,10.7800501109108,0],[-3.92014998028323,10.6844499308167,0],[-3.72574983231245,10.8271498539269,0],[-3.49825013702737,11.1300500571902,0],[-3.30264984380744,11.1712497980286,0],[-3.21644982723193,11.3305498568296,0],[-3.1343498197912,11.3536498424922,0],[-2.85154991355948,11.2857501299052,0],[-2.8434501696963,11.5303499839297,0],[-3.04135002934683,11.5761502066124,0],[-3.26314982160581,11.449450121738,0],[-3.42164993346109,11.5925497934905,0],[-3.3904502039353,11.6754501975379,0],[-3.5870500935916,11.75705018193,0],[-3.78084994410744,11.7259498274886,0],[-3.98694982202761,11.9323500789668,0],[-4.20465005481275,11.931250208124,0],[-4.3182501653373,11.7304500349266,0],[-4.48084983666642,11.7227500397057,0],[-4.46364985318165,12.0570500716465,0]] ;
+// L.polygon(ozData).addTo(map) ;
+
+// L.geoJson(ozData, {
+//     // style: function(feature) {
+//     //     switch (feature.properties.party) {
+//     //         case 'Republican': return {color: "#ff0000"};
+//     //         case 'Democrat':   return {color: "#0000ff"};
+//     //     }
+//     // }
+// }).addTo(map);
