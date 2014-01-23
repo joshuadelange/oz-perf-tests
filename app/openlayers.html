@@ -1,0 +1,44 @@
+<html>
+<head>
+
+    <title>OpenLayers Example</title>
+
+    <script src="http://openlayers.org/api/OpenLayers.js"></script>
+
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <div style="width:100%; height:100%" id="map"></div>
+
+    <script>
+
+        var map = new OpenLayers.Map("map") ;
+        var ozs = new OpenLayers.Layer.ArcGIS93Rest("OmegaZones",
+            "https://services1.arcgis.com/DnZ5orhsUGGdUZ3h/arcgis/rest/services/WorldMap1/MapServer",
+            {
+                layers: "2"
+            }
+        ) ;
+
+        var basemap = new OpenLayers.Layer.XYZ( "ESRI",
+            "http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/${z}/${y}/${x}",
+            {sphericalMercator: true} );
+
+        map.addLayer(basemap) ;
+        map.addLayer(ozs) ;
+
+        map.zoomToMaxExtent() ;
+
+    </script>
+
+</body>
+</html>
