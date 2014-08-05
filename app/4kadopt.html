@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>ArcGIS Feature Layer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Load Leaflet from their CDN -->
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+
+    <style>
+
+      html, body, #map {
+
+        width: 100%;
+        height: 100%;
+        margin: 0;
+
+        font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+        font-size: 15px;
+        line-height: 24px;
+
+        background-color: black;
+
+      }
+
+      path {
+        stroke: white;
+        stroke-width: 1px;
+        fill: rgba(1, 1, 1, 0);
+      }
+
+/*      
+      path:hover {
+        fill: #008eff;
+      }
+*/
+
+      #options {
+        position: absolute;
+          left: 0;
+          bottom: 0;
+
+        width: 165px;
+        /*height: 100px;*/
+
+        padding: 20px;
+
+        color: #595959;
+
+        background-color: rgba(1, 1, 1, 0.8);
+      }
+
+      #options h2 {
+        font-weight: 100;
+        margin: 0;
+        font-size: 20px;
+        line-height: 30px;
+        color: #B5B5B5;
+      }
+
+      #options p {
+        margin: 10px 0;
+        font-style: italic;
+        color: #3b3b3b;
+      }
+
+      #options label {
+        display: inline-block;
+        width: 80%;
+      }
+
+      #options input {
+        display: inline-block;
+        width: 15%;
+        background-color: transparent;
+        border: 1px solid #595959;
+        color: #595959;
+      }
+
+    </style>
+
+  <body>
+
+    <div id="map"></div>
+
+    <div id="options">
+
+      <h2>Zoom levels</h2>
+      <p>Note: Tweaking these options might crash your browser</p>
+
+      <label for="current_zoom">Current level</label>
+      <input id="current_zoom" type="text" disabled="disabled">
+
+      <label for="lq_start_layer">Any OZ's</label>
+      <input id="lq_start_layer" type="number">
+
+      <label for="hq_start_layer">HQ OZ's</label>
+      <input id="hq_start_layer" type="number">
+    </div>
+
+    <script src="bower_components/jquery/jquery.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="scripts/esri-leaflet.js"></script>
+    <script src="scripts/snap.svg.js"></script>
+    <script>
+
+      var optionsController = {
+
+        init: function(){
+
+          this.render() ;
+
+          $('#options input').change(this.submit) ;
+
+          return this;
+
+        },
+
+        render: function(){
+          $('#current_zoom').val(ozController.map.getZoom()) ;
+          $('#lq_start_layer').val(ozController.lq_oz_start_at_level) ;
+          $('#hq_start_layer').val(ozController.hq_oz_start_at_level) ;
+        },
+
+        submit: function(){
+          ozController.lq_oz_start_at_level = $('#lq_start_layer').val() ;
+          ozController.hq_oz_start_at_level = $('#hq_start_layer').val() ;
+          ozController.setAppropiateOzQuality() ;
+        }
+
+      } ;
+
+      var ozController = {
+
+        map: null,
+        base_layer: null,
+        oz_layer: null,
+
+        oz_url_lq: 'https://services1.arcgis.com/DnZ5orhsUGGdUZ3h/arcgis/rest/services/OZLowRes2/FeatureServer/0',
+        oz_url_hq: 'https://services1.arcgis.com/DnZ5orhsUGGdUZ3h/ArcGIS/rest/services/OZ2014/FeatureServer/0',
+        oz_url: this.oz_url_lq,
+
+        lq_oz_start_at_level: 1,
+        hq_oz_start_at_level: 6,
+
+        init: function(){
+
+          this.map = L.map('map', {
+            minZoom: 2
+          }).setView([52.3667, 4.9000], 7),
+          // }).setView([0, 0], 2),
+          // this.base_layer = L.esri.basemapLayer('DarkGray').addTo(this.map) ;
+
+          this.map.on('zoomend', $.proxy(this.zoomend, this)) ;
+
+          // this.addOzLayer() ;
+          this.setAppropiateOzQuality() ;
+
+          return this ;
+
+        },
+
+        addOzLayer: function(){
+
+          this.oz_layer = L.esri.featureLayer(this.oz_url, {
+
+            fields: ['WorldID', 'OBJECTID', 'OBJECTID_1', 'World', 'FID'],
+
+            // simplifyFactor: 0.9,
+            simplifyFactor: 1,
+
+            style: function(feature){
+
+              return {
+                className: 'oz-' + feature.properties.WorldID
+              }
+
+            }
+
+          });
+
+          this.oz_layer.addTo(this.map);
+
+          // this.oz_layer.on('load', function(){
+  
+          //   console.log(Snap('svg path')) ;
+
+          //   Snap('svg path[class*=oz-]').hover(function(){
+          //     console.log('hover!', arguments);
+          //   });
+
+          // });
+
+
+        },
+
+        removeOzLayer: function(){
+          if(this.oz_layer !== null){
+            this.map.removeLayer(this.oz_layer) ;
+          }
+        },
+
+        reloadOzLayer: function(){
+          this.removeOzLayer() ;
+          this.addOzLayer() ;
+        },
+
+        zoomend: function(ev){
+          this.setAppropiateOzQuality() ;
+          optionsController.render() ;
+        },
+
+        setAppropiateOzQuality: function(){
+
+          var z = this.map.getZoom() ;
+
+          if(z >= this.lq_oz_start_at_level
+          && z < this.hq_oz_start_at_level) {
+
+            //only if something changes, or else pointless/ugly reload
+            if(this.oz_url !== this.oz_url_lq) {
+              this.oz_url = this.oz_url_lq ;
+              this.reloadOzLayer() ;
+            }
+
+          }
+
+          if(z >= this.hq_oz_start_at_level) {
+
+            //only if this is new
+            if(this.oz_url !== this.oz_url_hq) {
+              this.oz_url = this.oz_url_hq ;
+              this.reloadOzLayer() ;            
+            }
+
+          }
+
+          //#yolo!
+          if(z < this.lq_oz_start_at_level) {
+            this.oz_url = null ;
+            this.removeOzLayer() ;
+          }
+
+        }
+
+      } ;
+
+      $(document).ready(function(){
+  
+        //globals because i want to tweak with the console. :D
+        window.ozController = ozController.init() ;
+        window.optionsController = optionsController.init() ;
+
+      });
+
+
+    </script>
+  
+</body></html>
